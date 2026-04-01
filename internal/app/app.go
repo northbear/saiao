@@ -12,16 +12,8 @@ import (
 	"saiao/internal/logging"
 )
 
-var ErrNotImplemented = errors.New("not implemented")
-
 type Options struct {
 	ConfigPath string
-}
-
-type BuildInfo struct {
-	Service string
-	Version string
-	Commit  string
 }
 
 func DefaultOptions() Options {

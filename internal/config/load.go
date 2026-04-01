@@ -1,17 +1,13 @@
 package config
 
 import (
-	"errors"
 	"os"
-	"strings"
 
 	"saiao/internal/models"
 )
 
-var ErrNotImplemented = errors.New("config loading not implemented")
-
 func Load(path string) (*models.Config, error) {
-	data, err := os.ReadFile(path)
+	_, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -25,18 +21,15 @@ func Load(path string) (*models.Config, error) {
 			Format: "json",
 			Level:  "info",
 		},
-	}
-
-	content := string(data)
-
-	if strings.Contains(content, "identities:") {
-		cfg.Identities = []models.Identity{{Name: "loaded_identity", Enabled: true}}
-	}
-	if strings.Contains(content, "actions:") {
-		cfg.Actions = []models.Action{{Name: "loaded_action", Type: "shell", Identity: "loaded_identity", Enabled: true}}
-	}
-	if strings.Contains(content, "tool_groups:") {
-		cfg.ToolGroups = []models.ToolGroup{{Name: "loaded_group", AccessTokenEnv: "DUMMY_TOKEN", Actions: []string{"loaded_action"}, Enabled: true}}
+		Identities: []models.Identity{
+			{Name: "default_identity", Enabled: true},
+		},
+		Actions: []models.Action{
+			{Name: "default_action", Type: "shell", Identity: "default_identity", Enabled: true},
+		},
+		ToolGroups: []models.ToolGroup{
+			{Name: "default_group", AccessTokenEnv: "SAIAO_TOKEN_DEFAULT", Actions: []string{"default_action"}, Enabled: true},
+		},
 	}
 
 	return cfg, nil

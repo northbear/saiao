@@ -1,0 +1,24 @@
+server:
+  listen: ":8080"
+  shutdown_timeout_seconds: 10
+
+logging:
+  format: json
+  level: info
+
+identities:
+  - name: default_identity
+    enabled: true
+
+actions:
+  - name: default_action
+    type: shell
+    identity: default_identity
+    enabled: true
+
+tool_groups:
+  - name: default_group
+    access_token_env: SAIAO_TOKEN_DEFAULT
+    actions:
+      - default_action
+    enabled: true
