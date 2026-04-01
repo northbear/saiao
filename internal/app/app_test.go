@@ -89,4 +89,3 @@ func TestRunWithOptionsReturnsServerClosedAsNil(t *testing.T) {
 		t.Fatalf("expected nil or server closed handling, got %v", err)
 	}
 }
-```
