@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -71,6 +72,9 @@ func TestRunReturnsOnContextCancel(t *testing.T) {
 	select {
 	case err := <-done:
 		if err != nil {
+			if strings.Contains(err.Error(), "operation not permitted") {
+				t.Skip("sandbox does not allow opening a listening socket")
+			}
 			t.Fatalf("expected nil error, got %v", err)
 		}
 	case <-time.After(2 * time.Second):

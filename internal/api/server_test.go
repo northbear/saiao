@@ -1,19 +1,71 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"saiao/internal/auth"
+	"saiao/internal/models"
 )
+
+func testConfig() *models.Config {
+	return &models.Config{
+		Identities: []models.Identity{
+			{
+				Name:    "ops",
+				Secrets: map[string]string{},
+			},
+		},
+		Actions: []models.Action{
+			{
+				Name:            "echo",
+				Type:            "shell",
+				Identity:        "ops",
+				Description:     "Echo a validated message",
+				CommandTemplate: "printf 'hello %s' '{{message}}'",
+				InputSchema: map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"message": map[string]any{
+							"type": "string",
+						},
+					},
+					"required": []any{"message"},
+				},
+			},
+			{
+				Name:            "other",
+				Type:            "shell",
+				Identity:        "ops",
+				Description:     "A second action in another group",
+				CommandTemplate: "printf other",
+			},
+		},
+		ToolGroups: []models.ToolGroup{
+			{
+				Name:           "ops_group",
+				AccessTokenEnv: "OPS_GROUP_TOKEN",
+				Actions:        []string{"echo"},
+			},
+			{
+				Name:           "other_group",
+				AccessTokenEnv: "OTHER_GROUP_TOKEN",
+				Actions:        []string{"other"},
+			},
+		},
+	}
+}
 
 func TestNewServerSetsAddress(t *testing.T) {
 	srv := NewServer(":1234", BuildInfo{
 		Service: "saiao",
 		Version: "1.0.0",
 		Commit:  "abc1234",
-	})
+	}, testConfig(), auth.NewTokenStore())
 	if srv.Addr != ":1234" {
 		t.Fatalf("expected addr :1234, got %s", srv.Addr)
 	}
@@ -27,7 +79,7 @@ func TestInfoEndpointReturnsInfoJSON(t *testing.T) {
 		Service: "saiao",
 		Version: "1.0.0",
 		Commit:  "abc1234",
-	})
+	}, testConfig(), auth.NewTokenStore())
 
 	req := httptest.NewRequest(http.MethodGet, "/info", nil)
 	rr := httptest.NewRecorder()
@@ -58,5 +110,98 @@ func TestInfoEndpointReturnsInfoJSON(t *testing.T) {
 	}
 	if got["commit"] != "abc1234" {
 		t.Fatalf("expected commit abc1234, got %v", got["commit"])
+	}
+}
+
+func TestManifestEndpointRequiresMatchingToken(t *testing.T) {
+	store := auth.NewTokenStore()
+	store.Register("secret", "ops_group")
+
+	srv := NewServer(":0", BuildInfo{Service: "saiao"}, testConfig(), store)
+
+	req := httptest.NewRequest(http.MethodGet, "/tool-groups/ops_group/manifest", nil)
+	req.Header.Set("Authorization", "Bearer secret")
+	rr := httptest.NewRecorder()
+
+	srv.Handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+
+	var response models.ManifestResponse
+	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(response.Tools) != 1 || response.Tools[0].Name != "echo" {
+		t.Fatalf("unexpected manifest: %#v", response.Tools)
+	}
+}
+
+func TestManifestEndpointRejectsWrongToolGroupToken(t *testing.T) {
+	store := auth.NewTokenStore()
+	store.Register("secret", "other_group")
+
+	srv := NewServer(":0", BuildInfo{Service: "saiao"}, testConfig(), store)
+
+	req := httptest.NewRequest(http.MethodGet, "/tool-groups/ops_group/manifest", nil)
+	req.Header.Set("Authorization", "Bearer secret")
+	rr := httptest.NewRecorder()
+
+	srv.Handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", rr.Code)
+	}
+}
+
+func TestInvokeEndpointExecutesAction(t *testing.T) {
+	store := auth.NewTokenStore()
+	store.Register("secret", "ops_group")
+
+	srv := NewServer(":0", BuildInfo{Service: "saiao"}, testConfig(), store)
+
+	req := httptest.NewRequest(http.MethodPost, "/tool-groups/ops_group/actions/echo/invoke", bytes.NewBufferString(`{"message":"world"}`))
+	req.Header.Set("Authorization", "Bearer secret")
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	srv.Handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d, body=%s", rr.Code, rr.Body.String())
+	}
+
+	var response models.SuccessResponse
+	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if response.Result.Output != "hello world" {
+		t.Fatalf("unexpected output %q", response.Result.Output)
+	}
+}
+
+func TestInvokeEndpointReturnsInvalidInput(t *testing.T) {
+	store := auth.NewTokenStore()
+	store.Register("secret", "ops_group")
+
+	srv := NewServer(":0", BuildInfo{Service: "saiao"}, testConfig(), store)
+
+	req := httptest.NewRequest(http.MethodPost, "/tool-groups/ops_group/actions/echo/invoke", bytes.NewBufferString(`{}`))
+	req.Header.Set("Authorization", "Bearer secret")
+	rr := httptest.NewRecorder()
+
+	srv.Handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", rr.Code)
+	}
+
+	var response models.ErrorResponse
+	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if response.Error.Code != "invalid_input" {
+		t.Fatalf("expected invalid_input, got %q", response.Error.Code)
 	}
 }
