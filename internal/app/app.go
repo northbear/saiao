@@ -44,6 +44,12 @@ func RunWithOptions(ctx context.Context, opts Options) error {
 		return errors.New("nil context")
 	}
 
+	select {
+	case <-ctx.Done():
+		return nil
+	default:
+	}
+
 	srv := opts.Server
 	if srv == nil {
 		srv = api.NewServer(opts.ListenAddress, api.BuildInfo{
