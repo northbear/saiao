@@ -24,33 +24,33 @@
 
 ## Milestone 2: Core MVP runtime behavior
 
-- [ ] Implement YAML config parsing
-- [ ] Implement startup config validation
-- [ ] Implement secret resolution from env vars
-- [ ] Implement secret resolution from mounted files
-- [ ] Implement bearer token parsing
-- [ ] Implement token-to-group mapping
-- [ ] Implement `/info` response wiring with build info source
-- [ ] Implement tool manifest generation
-- [ ] Implement invoke request flow
-- [ ] Implement input schema validation subset
-- [ ] Implement normalized error mapping
-- [ ] Implement HTTP executor
-- [ ] Implement SSH executor
-- [ ] Implement Shell executor
-- [ ] Implement Email executor
+- [x] Implement YAML config parsing
+- [x] Implement startup config validation
+- [x] Implement secret resolution from env vars
+- [x] Implement secret resolution from mounted files
+- [x] Implement bearer token parsing
+- [x] Implement token-to-group mapping
+- [x] Implement `/info` response wiring with build info source
+- [x] Implement tool manifest generation
+- [x] Implement invoke request flow
+- [x] Implement input schema validation subset
+- [x] Implement normalized error mapping
+- [x] Implement HTTP executor
+- [x] Implement SSH executor
+- [x] Implement Shell executor
+- [x] Implement Email executor
 
 ## Milestone 3: MVP hardening
 
-- [ ] Add tests for config validation failures
-- [ ] Add tests for secret resolution failures
-- [ ] Add tests for unauthorized access
-- [ ] Add tests for manifest filtering by tool group
-- [ ] Add tests for invoke success and failure
-- [ ] Add timeout handling tests
-- [ ] Add integration test for binary startup
-- [ ] Add container build verification
-- [ ] Add README usage documentation
+- [x] Add tests for config validation failures
+- [x] Add tests for secret resolution failures
+- [x] Add tests for unauthorized access
+- [x] Add tests for manifest filtering by tool group
+- [x] Add tests for invoke success and failure
+- [x] Add timeout handling tests
+- [x] Add integration test for binary startup
+- [x] Add container build verification
+- [x] Add README usage documentation
 
 ## Notes
 
@@ -67,5 +67,6 @@ Completed today:
 
 Current state:
 - the binary is runnable
-- the core MVP runtime behavior is still stubbed
-- next work should focus on config parsing, auth, and action invocation
+- Milestone 2 runtime behavior is implemented end-to-end for manifest retrieval and action invocation
+- Milestone 3 verification coverage now includes binary startup and Docker build validation
+- the next meaningful gaps are broader executor-specific integration coverage and runtime polish
