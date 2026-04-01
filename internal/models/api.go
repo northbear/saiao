@@ -35,3 +35,22 @@ type ToolManifest struct {
 type ManifestResponse struct {
 	Tools []ToolManifest `json:"tools"`
 }
+
+func NewSuccessResponse(output string, exitCode int) SuccessResponse {
+	return SuccessResponse{
+		Status: "success",
+		Result: Result{
+			Output:   output,
+			ExitCode: exitCode,
+		},
+	}
+}
+
+func NewErrorResponse(code, message string) ErrorResponse {
+	return ErrorResponse{
+		Error: APIError{
+			Code:    code,
+			Message: message,
+		},
+	}
+}
