@@ -46,7 +46,11 @@ func RunWithOptions(ctx context.Context, opts Options) error {
 
 	srv := opts.Server
 	if srv == nil {
-		srv = api.NewServer(opts.ListenAddress, opts.BuildInfo)
+		srv = api.NewServer(opts.ListenAddress, api.BuildInfo{
+			Service: opts.BuildInfo.Service,
+			Version: opts.BuildInfo.Version,
+			Commit:  opts.BuildInfo.Commit,
+		})
 	}
 
 	errCh := make(chan error, 1)
