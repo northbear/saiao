@@ -65,25 +65,18 @@ func TestRunWithOptionsShutsDownOnContextCancel(t *testing.T) {
 
 func TestRunWithOptionsReturnsServerClosedAsNil(t *testing.T) {
 	srv := &http.Server{}
-	err := func() error {
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
 
-		go func() {
-			time.Sleep(10 * time.Millisecond)
-			cancel()
-		}()
-
-		return RunWithOptions(ctx, Options{
-			ListenAddress: ":0",
-			BuildInfo: BuildInfo{
-				Service: "saiao",
-				Version: "test",
-				Commit:  "test",
-			},
-			Server: srv,
-		})
-	}()
+	err := RunWithOptions(ctx, Options{
+		ListenAddress: ":0",
+		BuildInfo: BuildInfo{
+			Service: "saiao",
+			Version: "test",
+			Commit:  "test",
+		},
+		Server: srv,
+	})
 
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		t.Fatalf("expected nil or server closed handling, got %v", err)
