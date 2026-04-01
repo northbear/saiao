@@ -8,14 +8,14 @@ import (
 	"time"
 
 	"saiao/internal/api"
+	"saiao/internal/config"
+	"saiao/internal/logging"
 )
 
 var ErrNotImplemented = errors.New("not implemented")
 
 type Options struct {
-	ListenAddress string
-	BuildInfo     BuildInfo
-	Server        *http.Server
+	ConfigPath string
 }
 
 type BuildInfo struct {
@@ -26,48 +26,51 @@ type BuildInfo struct {
 
 func DefaultOptions() Options {
 	return Options{
-		ListenAddress: ":8080",
-		BuildInfo: BuildInfo{
-			Service: "saiao",
-			Version: "0.1.0",
-			Commit:  "dev",
-		},
+		ConfigPath: "/etc/saiao/config.yaml",
 	}
 }
 
-func Run(ctx context.Context) error {
-	return RunWithOptions(ctx, DefaultOptions())
+func Run(opts Options) error {
+	return RunWithContext(context.Background(), opts)
 }
 
-func RunWithOptions(ctx context.Context, opts Options) error {
+func RunWithContext(ctx context.Context, opts Options) error {
 	if ctx == nil {
 		return errors.New("nil context")
 	}
 
-	select {
-	case <-ctx.Done():
-		return nil
-	default:
+	if opts.ConfigPath == "" {
+		opts = DefaultOptions()
 	}
 
-	srv := opts.Server
-	if srv == nil {
-		srv = api.NewServer(opts.ListenAddress, api.BuildInfo{
-			Service: opts.BuildInfo.Service,
-			Version: opts.BuildInfo.Version,
-			Commit:  opts.BuildInfo.Commit,
-		})
+	cfg, err := config.Load(opts.ConfigPath)
+	if err != nil {
+		return err
 	}
+
+	if err := config.Validate(cfg); err != nil {
+		return err
+	}
+
+	logger := logging.New(cfg.Logging.Format, cfg.Logging.Level)
+	_ = logger
+
+	buildInfo := api.BuildInfo{
+		Service: "saiao",
+		Version: "0.1.0",
+		Commit:  "dev",
+	}
+
+	srv := api.NewServer(cfg.Server.Listen, buildInfo)
 
 	errCh := make(chan error, 1)
-
 	go func() {
 		errCh <- srv.ListenAndServe()
 	}()
 
 	select {
 	case <-ctx.Done():
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.Server.ShutdownTimeoutSeconds)*time.Second)
 		defer cancel()
 
 		if err := srv.Shutdown(shutdownCtx); err != nil {

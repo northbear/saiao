@@ -1,20 +1,20 @@
 package main
 
 import (
-	"context"
+	"flag"
 	"fmt"
 	"os"
-	"os/signal"
-	"syscall"
 
 	"saiao/internal/app"
 )
 
 func main() {
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
+	configPath := flag.String("config", "/etc/saiao/config.yaml", "path to SAIAO config file")
+	flag.Parse()
 
-	if err := app.Run(ctx); err != nil {
+	if err := app.Run(app.Options{
+		ConfigPath: *configPath,
+	}); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}

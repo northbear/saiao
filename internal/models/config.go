@@ -9,45 +9,45 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Listen                string
-	ReadTimeoutSeconds    int
-	WriteTimeoutSeconds   int
-	ShutdownTimeoutSeconds int
+	Listen                 string `yaml:"listen"`
+	ReadTimeoutSeconds     int    `yaml:"read_timeout_seconds"`
+	WriteTimeoutSeconds    int    `yaml:"write_timeout_seconds"`
+	ShutdownTimeoutSeconds int    `yaml:"shutdown_timeout_seconds"`
 }
 
 type LoggingConfig struct {
-	Format string
-	Level  string
+	Format string `yaml:"format"`
+	Level  string `yaml:"level"`
 }
 
 type Identity struct {
-	Name        string
-	Username    string
-	Email       string
-	DisplayName  string
-	Principal    string
-	Domain       string
-	Groups       []string
-	Enabled      bool
-	Secrets      map[string]string
+	Name        string            `yaml:"name"`
+	Username    string            `yaml:"username"`
+	Email       string            `yaml:"email"`
+	DisplayName  string            `yaml:"display_name"`
+	Principal   string            `yaml:"principal"`
+	Domain      string            `yaml:"domain"`
+	Groups      []string          `yaml:"groups"`
+	Enabled     bool              `yaml:"enabled"`
+	Secrets     map[string]string `yaml:"secrets"`
 }
 
 type Action struct {
-	Name          string
-	Type          string
-	Identity      string
-	Description   string
-	Enabled       bool
-	TimeoutSeconds int
-	InputSchema   map[string]any
+	Name           string         `yaml:"name"`
+	Type           string         `yaml:"type"`
+	Identity       string         `yaml:"identity"`
+	Description    string         `yaml:"description"`
+	Enabled        bool           `yaml:"enabled"`
+	TimeoutSeconds int            `yaml:"timeout_seconds"`
+	InputSchema    map[string]any `yaml:"input_schema"`
 }
 
 type ToolGroup struct {
-	Name           string
-	Description    string
-	Enabled        bool
-	AccessTokenEnv string
-	Actions        []string
+	Name           string   `yaml:"name"`
+	Description    string   `yaml:"description"`
+	Enabled        bool     `yaml:"enabled"`
+	AccessTokenEnv string   `yaml:"access_token_env"`
+	Actions        []string `yaml:"actions"`
 }
 
 func (c Config) HasIdentities() bool {

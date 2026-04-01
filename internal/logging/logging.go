@@ -4,6 +4,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"strings"
 )
 
 func New(format string, level string) *slog.Logger {
@@ -12,7 +13,7 @@ func New(format string, level string) *slog.Logger {
 	}
 
 	var handler slog.Handler
-	switch format {
+	switch strings.ToLower(format) {
 	case "text":
 		handler = slog.NewTextHandler(os.Stdout, opts)
 	default:
@@ -23,7 +24,7 @@ func New(format string, level string) *slog.Logger {
 }
 
 func parseLevel(level string) slog.Leveler {
-	switch level {
+	switch strings.ToLower(level) {
 	case "debug":
 		return slog.LevelDebug
 	case "warn":
