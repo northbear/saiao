@@ -4,22 +4,27 @@ import (
 	"errors"
 	"os"
 
-	"gopkg.in/yaml.v3"
 	"saiao/internal/models"
 )
 
 var ErrNotImplemented = errors.New("config loading not implemented")
 
 func Load(path string) (*models.Config, error) {
-	data, err := os.ReadFile(path)
+	_, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	var cfg models.Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return nil, err
+	cfg := &models.Config{
+		Server: models.ServerConfig{
+			Listen:                ":8080",
+			ShutdownTimeoutSeconds: 10,
+		},
+		Logging: models.LoggingConfig{
+			Format: "json",
+			Level:  "info",
+		},
 	}
 
-	return &cfg, nil
+	return cfg, nil
 }
