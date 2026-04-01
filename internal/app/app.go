@@ -5,11 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"saiao/internal/api"
+	"saiao/internal/auth"
 	"saiao/internal/config"
 	"saiao/internal/logging"
+	"saiao/internal/models"
 )
 
 type Options struct {
@@ -53,7 +56,7 @@ func RunWithContext(ctx context.Context, opts Options) error {
 		Commit:  "dev",
 	}
 
-	srv := api.NewServer(cfg.Server.Listen, buildInfo)
+	srv := api.NewServer(cfg.Server.Listen, buildInfo, cfg, buildTokenStore(cfg))
 
 	errCh := make(chan error, 1)
 	go func() {
@@ -75,4 +78,21 @@ func RunWithContext(ctx context.Context, opts Options) error {
 		}
 		return nil
 	}
+}
+
+func buildTokenStore(cfg *models.Config) *auth.TokenStore {
+	store := auth.NewTokenStore()
+	if cfg == nil {
+		return store
+	}
+
+	for _, group := range cfg.ToolGroups {
+		token := os.Getenv(group.AccessTokenEnv)
+		if token == "" {
+			continue
+		}
+		store.Register(token, group.Name)
+	}
+
+	return store
 }
