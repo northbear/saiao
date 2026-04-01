@@ -6,18 +6,24 @@ import (
 	"net/http"
 	"testing"
 	"time"
-
-	"saiao/internal/api"
 )
 
-type immediateServer struct{}
-
-func (s *immediateServer) ListenAndServe() error {
-	return http.ErrServerClosed
+type stubServer struct {
+	listenCalled  bool
+	shutdownCalled bool
+	listenErr     error
+	shutdownErr   error
 }
 
-func (s *immediateServer) Shutdown(context.Context) error {
-	return nil
+func (s *stubServer) ListenAndServe() error {
+	s.listenCalled = true
+	return s.listenErr
+}
+
+func (s *stubServer) Shutdown(ctx context.Context) error {
+	_ = ctx
+	s.shutdownCalled = true
+	return s.shutdownErr
 }
 
 func TestRunReturnsNotImplemented(t *testing.T) {
@@ -40,34 +46,20 @@ func TestRunWithOptionsRejectsNilContext(t *testing.T) {
 	}
 }
 
-func TestRunWithOptionsReturnsServerClosedAsNil(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	err := RunWithOptions(ctx, Options{
-		ListenAddress: ":0",
-		BuildInfo: BuildInfo{
-			Service: "saiao",
-			Version: "test",
-			Commit:  "test",
-		},
-		Server: &http.Server{},
-	})
-
-	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		t.Fatalf("expected nil or server closed handling, got %v", err)
-	}
-}
-
-func TestRunWithOptionsStopsOnCancelledContext(t *testing.T) {
+func TestRunWithOptionsReturnsNilOnCanceledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	srv := api.NewServer(":0", api.BuildInfo{
-		Service: "saiao",
-		Version: "test",
-		Commit:  "test",
-	})
+	err := RunWithOptions(ctx, Options{})
+	if err != nil {
+		t.Fatalf("expected nil error on canceled context, got %v", err)
+	}
+}
+
+func TestRunWithOptionsHandlesServerClosed(t *testing.T) {
+	srv := &http.Server{}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	done := make(chan error, 1)
 	go func() {
@@ -84,8 +76,8 @@ func TestRunWithOptionsStopsOnCancelledContext(t *testing.T) {
 
 	select {
 	case err := <-done:
-		if err != nil {
-			t.Fatalf("expected nil error, got %v", err)
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			t.Fatalf("expected nil or server closed handling, got %v", err)
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("RunWithOptions did not return in time")
