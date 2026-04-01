@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -64,21 +65,37 @@ func TestRunWithOptionsShutsDownOnContextCancel(t *testing.T) {
 }
 
 func TestRunWithOptionsReturnsServerClosedAsNil(t *testing.T) {
-	srv := &http.Server{}
+	handler := http.NewServeMux()
+	srv := &http.Server{Handler: handler}
+
+	testListener := httptest.NewUnstartedServer(handler)
+	testListener.Start()
+	defer testListener.Close()
+
+	srv.Addr = testListener.Listener.Addr().String()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	err := RunWithOptions(ctx, Options{
-		ListenAddress: ":0",
-		BuildInfo: BuildInfo{
-			Service: "saiao",
-			Version: "test",
-			Commit:  "test",
-		},
-		Server: srv,
-	})
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- RunWithOptions(ctx, Options{
+			ListenAddress: srv.Addr,
+			BuildInfo: BuildInfo{
+				Service: "saiao",
+				Version: "test",
+				Commit:  "test",
+			},
+			Server: srv,
+		})
+	}()
 
-	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		t.Fatalf("expected nil or server closed handling, got %v", err)
+	select {
+	case err := <-errCh:
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			t.Fatalf("expected nil or server closed handling, got %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("RunWithOptions did not return in time")
 	}
 }
