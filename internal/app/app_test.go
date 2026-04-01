@@ -31,7 +31,7 @@ func TestRunWithOptionsRejectsNilContext(t *testing.T) {
 }
 
 func TestRunWithOptionsShutsDownOnContextCancel(t *testing.T) {
-	srv := api.NewServer(":0", BuildInfo{
+	srv := api.NewServer(":0", api.BuildInfo{
 		Service: "saiao",
 		Version: "test",
 		Commit:  "test",
@@ -89,3 +89,4 @@ func TestRunWithOptionsReturnsServerClosedAsNil(t *testing.T) {
 		t.Fatalf("expected nil or server closed handling, got %v", err)
 	}
 }
+```

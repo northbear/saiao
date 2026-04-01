@@ -9,7 +9,7 @@ import (
 )
 
 func TestNewServerSetsAddress(t *testing.T) {
-	srv := NewServer(":1234", appInfo{
+	srv := NewServer(":1234", BuildInfo{
 		Service: "saiao",
 		Version: "1.0.0",
 		Commit:  "abc1234",
@@ -23,7 +23,7 @@ func TestNewServerSetsAddress(t *testing.T) {
 }
 
 func TestInfoEndpointReturnsInfoJSON(t *testing.T) {
-	srv := NewServer(":0", appInfo{
+	srv := NewServer(":0", BuildInfo{
 		Service: "saiao",
 		Version: "1.0.0",
 		Commit:  "abc1234",
