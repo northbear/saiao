@@ -48,7 +48,6 @@ func RunWithContext(ctx context.Context, opts Options) error {
 	}
 
 	logger := logging.New(cfg.Logging.Format, cfg.Logging.Level)
-	_ = logger
 
 	buildInfo := api.BuildInfo{
 		Service: "saiao",
@@ -56,7 +55,7 @@ func RunWithContext(ctx context.Context, opts Options) error {
 		Commit:  "dev",
 	}
 
-	srv := api.NewServer(cfg.Server.Listen, buildInfo, cfg, buildTokenStore(cfg))
+	srv := api.NewServer(cfg.Server.Listen, buildInfo, cfg, buildTokenStore(cfg), logger)
 
 	errCh := make(chan error, 1)
 	go func() {

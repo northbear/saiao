@@ -8,6 +8,10 @@ import (
 )
 
 func New(format string, level string) *slog.Logger {
+	return NewWithWriter(os.Stdout, format, level)
+}
+
+func NewWithWriter(w io.Writer, format string, level string) *slog.Logger {
 	opts := &slog.HandlerOptions{
 		Level: parseLevel(level),
 	}
@@ -15,9 +19,9 @@ func New(format string, level string) *slog.Logger {
 	var handler slog.Handler
 	switch strings.ToLower(format) {
 	case "text":
-		handler = slog.NewTextHandler(os.Stdout, opts)
+		handler = slog.NewTextHandler(w, opts)
 	default:
-		handler = slog.NewJSONHandler(os.Stdout, opts)
+		handler = slog.NewJSONHandler(w, opts)
 	}
 
 	return slog.New(handler)

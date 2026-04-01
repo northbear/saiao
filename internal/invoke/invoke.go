@@ -4,22 +4,25 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"time"
 
 	saiaoerrors "saiao/internal/errors"
 	"saiao/internal/models"
 )
 
-func Execute(groupName string, actionName string, body []byte, cfg *models.Config) (models.SuccessResponse, error) {
+func Execute(groupName string, actionName string, body []byte, cfg *models.Config, logger *slog.Logger) (models.SuccessResponse, error) {
 	if cfg == nil {
 		return models.SuccessResponse{}, fmt.Errorf("%w: config is nil", saiaoerrors.ErrInternal)
+	}
+	if logger == nil {
+		logger = slog.Default()
 	}
 
 	group, action, identity, err := resolve(groupName, actionName, cfg)
 	if err != nil {
 		return models.SuccessResponse{}, err
 	}
-	_ = group
 
 	input, err := decodeInput(body)
 	if err != nil {
@@ -37,11 +40,39 @@ func Execute(groupName string, actionName string, body []byte, cfg *models.Confi
 	}
 	defer cancel()
 
+	startedAt := time.Now()
+	logger.Info("invoke_started",
+		"tool_group", group.Name,
+		"action", action.Name,
+		"action_type", action.Type,
+		"identity", identity.Name,
+		"timeout_seconds", action.TimeoutSeconds,
+	)
+
 	output, exitCode, err := Dispatch(ctx, action, identity, input)
 	if err != nil {
+		logger.Warn("invoke_finished",
+			"tool_group", group.Name,
+			"action", action.Name,
+			"action_type", action.Type,
+			"identity", identity.Name,
+			"status", "error",
+			"error_code", errorCode(err),
+			"duration_ms", time.Since(startedAt).Milliseconds(),
+			"exit_code", exitCode,
+		)
 		return models.SuccessResponse{}, err
 	}
 
+	logger.Info("invoke_finished",
+		"tool_group", group.Name,
+		"action", action.Name,
+		"action_type", action.Type,
+		"identity", identity.Name,
+		"status", "success",
+		"duration_ms", time.Since(startedAt).Milliseconds(),
+		"exit_code", exitCode,
+	)
 	return models.NewSuccessResponse(output, exitCode), nil
 }
 
@@ -113,4 +144,21 @@ func decodeInput(body []byte) (map[string]any, error) {
 	}
 
 	return input, nil
+}
+
+func errorCode(err error) string {
+	switch {
+	case saiaoerrors.IsUnauthorized(err):
+		return "unauthorized"
+	case saiaoerrors.IsNotFound(err):
+		return "not_found"
+	case saiaoerrors.IsInvalidInput(err):
+		return "invalid_input"
+	case saiaoerrors.IsExecutionFailed(err):
+		return "execution_failed"
+	case saiaoerrors.IsTimeout(err):
+		return "timeout"
+	default:
+		return "internal_error"
+	}
 }

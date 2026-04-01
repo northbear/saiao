@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -65,7 +66,7 @@ func TestNewServerSetsAddress(t *testing.T) {
 		Service: "saiao",
 		Version: "1.0.0",
 		Commit:  "abc1234",
-	}, testConfig(), auth.NewTokenStore())
+	}, testConfig(), auth.NewTokenStore(), slog.Default())
 	if srv.Addr != ":1234" {
 		t.Fatalf("expected addr :1234, got %s", srv.Addr)
 	}
@@ -79,7 +80,7 @@ func TestInfoEndpointReturnsInfoJSON(t *testing.T) {
 		Service: "saiao",
 		Version: "1.0.0",
 		Commit:  "abc1234",
-	}, testConfig(), auth.NewTokenStore())
+	}, testConfig(), auth.NewTokenStore(), slog.Default())
 
 	req := httptest.NewRequest(http.MethodGet, "/info", nil)
 	rr := httptest.NewRecorder()
@@ -117,7 +118,7 @@ func TestManifestEndpointRequiresMatchingToken(t *testing.T) {
 	store := auth.NewTokenStore()
 	store.Register("secret", "ops_group")
 
-	srv := NewServer(":0", BuildInfo{Service: "saiao"}, testConfig(), store)
+	srv := NewServer(":0", BuildInfo{Service: "saiao"}, testConfig(), store, slog.Default())
 
 	req := httptest.NewRequest(http.MethodGet, "/tool-groups/ops_group/manifest", nil)
 	req.Header.Set("Authorization", "Bearer secret")
@@ -142,7 +143,7 @@ func TestManifestEndpointRejectsWrongToolGroupToken(t *testing.T) {
 	store := auth.NewTokenStore()
 	store.Register("secret", "other_group")
 
-	srv := NewServer(":0", BuildInfo{Service: "saiao"}, testConfig(), store)
+	srv := NewServer(":0", BuildInfo{Service: "saiao"}, testConfig(), store, slog.Default())
 
 	req := httptest.NewRequest(http.MethodGet, "/tool-groups/ops_group/manifest", nil)
 	req.Header.Set("Authorization", "Bearer secret")
@@ -159,7 +160,7 @@ func TestInvokeEndpointExecutesAction(t *testing.T) {
 	store := auth.NewTokenStore()
 	store.Register("secret", "ops_group")
 
-	srv := NewServer(":0", BuildInfo{Service: "saiao"}, testConfig(), store)
+	srv := NewServer(":0", BuildInfo{Service: "saiao"}, testConfig(), store, slog.Default())
 
 	req := httptest.NewRequest(http.MethodPost, "/tool-groups/ops_group/actions/echo/invoke", bytes.NewBufferString(`{"message":"world"}`))
 	req.Header.Set("Authorization", "Bearer secret")
@@ -185,7 +186,7 @@ func TestInvokeEndpointReturnsInvalidInput(t *testing.T) {
 	store := auth.NewTokenStore()
 	store.Register("secret", "ops_group")
 
-	srv := NewServer(":0", BuildInfo{Service: "saiao"}, testConfig(), store)
+	srv := NewServer(":0", BuildInfo{Service: "saiao"}, testConfig(), store, slog.Default())
 
 	req := httptest.NewRequest(http.MethodPost, "/tool-groups/ops_group/actions/echo/invoke", bytes.NewBufferString(`{}`))
 	req.Header.Set("Authorization", "Bearer secret")

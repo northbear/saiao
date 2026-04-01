@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -19,9 +20,9 @@ type BuildInfo struct {
 	Commit  string
 }
 
-func NewServer(listenAddress string, info BuildInfo, cfg *models.Config, store *auth.TokenStore) *http.Server {
+func NewServer(listenAddress string, info BuildInfo, cfg *models.Config, store *auth.TokenStore, logger *slog.Logger) *http.Server {
 	mux := http.NewServeMux()
-	RegisterRoutes(mux, info, cfg, store)
+	RegisterRoutes(mux, info, cfg, store, defaultLogger(logger))
 
 	var readTimeout time.Duration
 	var writeTimeout time.Duration
@@ -62,8 +63,8 @@ func writeManifest(w http.ResponseWriter, groupName string, cfg *models.Config) 
 	writeJSON(w, http.StatusOK, response)
 }
 
-func writeInvokeResult(w http.ResponseWriter, groupName, actionName string, body []byte, cfg *models.Config) {
-	response, err := invoke.Execute(groupName, actionName, body, cfg)
+func writeInvokeResult(w http.ResponseWriter, groupName, actionName string, body []byte, cfg *models.Config, logger *slog.Logger) {
+	response, err := invoke.Execute(groupName, actionName, body, cfg, defaultLogger(logger))
 	if err != nil {
 		writeMappedError(w, err)
 		return
@@ -97,4 +98,11 @@ func writeMappedError(w http.ResponseWriter, err error) {
 	}
 
 	writeJSON(w, statusCode, models.NewErrorResponse(code, err.Error()))
+}
+
+func defaultLogger(logger *slog.Logger) *slog.Logger {
+	if logger == nil {
+		return slog.Default()
+	}
+	return logger
 }

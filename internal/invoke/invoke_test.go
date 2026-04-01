@@ -1,10 +1,13 @@
 package invoke
 
 import (
+	"bytes"
 	stdErrors "errors"
+	"strings"
 	"testing"
 
 	saiaoerrors "saiao/internal/errors"
+	"saiao/internal/logging"
 	"saiao/internal/models"
 )
 
@@ -33,7 +36,7 @@ func TestExecuteRunsShellAction(t *testing.T) {
 		},
 	}
 
-	got, err := Execute("ops_group", "echo", []byte(`{"message":"world"}`), cfg)
+	got, err := Execute("ops_group", "echo", []byte(`{"message":"world"}`), cfg, logging.Discard())
 	if err != nil {
 		t.Fatalf("execute: %v", err)
 	}
@@ -65,11 +68,52 @@ func TestExecuteReturnsTimeoutWhenActionExceedsDeadline(t *testing.T) {
 		},
 	}
 
-	_, err := Execute("ops_group", "slow", nil, cfg)
+	_, err := Execute("ops_group", "slow", nil, cfg, logging.Discard())
 	if err == nil {
 		t.Fatal("expected timeout error")
 	}
 	if !stdErrors.Is(err, saiaoerrors.ErrTimeout) {
 		t.Fatalf("expected timeout error, got %v", err)
+	}
+}
+
+func TestExecuteLogsLifecycle(t *testing.T) {
+	cfg := &models.Config{
+		Identities: []models.Identity{
+			{Name: "ops", Secrets: map[string]string{}},
+		},
+		Actions: []models.Action{
+			{
+				Name:            "echo",
+				Type:            "shell",
+				Identity:        "ops",
+				CommandTemplate: "printf hi",
+			},
+		},
+		ToolGroups: []models.ToolGroup{
+			{Name: "ops_group", Actions: []string{"echo"}},
+		},
+	}
+
+	var buf bytes.Buffer
+	logger := logging.NewWithWriter(&buf, "json", "info")
+
+	_, err := Execute("ops_group", "echo", nil, cfg, logger)
+	if err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+
+	logOutput := buf.String()
+	if !strings.Contains(logOutput, `"msg":"invoke_started"`) {
+		t.Fatalf("expected invoke_started log, got %s", logOutput)
+	}
+	if !strings.Contains(logOutput, `"msg":"invoke_finished"`) {
+		t.Fatalf("expected invoke_finished log, got %s", logOutput)
+	}
+	if !strings.Contains(logOutput, `"status":"success"`) {
+		t.Fatalf("expected success status log, got %s", logOutput)
+	}
+	if !strings.Contains(logOutput, `"action":"echo"`) {
+		t.Fatalf("expected action field log, got %s", logOutput)
 	}
 }
