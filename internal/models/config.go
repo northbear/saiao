@@ -9,10 +9,10 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Listen                 string
-	ReadTimeoutSeconds      int
-	WriteTimeoutSeconds     int
-	ShutdownTimeoutSeconds  int
+	Listen                string
+	ReadTimeoutSeconds    int
+	WriteTimeoutSeconds   int
+	ShutdownTimeoutSeconds int
 }
 
 type LoggingConfig struct {
@@ -25,21 +25,21 @@ type Identity struct {
 	Username    string
 	Email       string
 	DisplayName  string
-	Principal   string
-	Domain      string
-	Groups      []string
-	Enabled     bool
-	Secrets     map[string]string
+	Principal    string
+	Domain       string
+	Groups       []string
+	Enabled      bool
+	Secrets      map[string]string
 }
 
 type Action struct {
-	Name           string
-	Type           string
-	Identity       string
-	Description    string
-	Enabled        bool
-	TimeoutSeconds  int
-	InputSchema    map[string]any
+	Name          string
+	Type          string
+	Identity      string
+	Description   string
+	Enabled       bool
+	TimeoutSeconds int
+	InputSchema   map[string]any
 }
 
 type ToolGroup struct {
