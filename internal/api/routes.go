@@ -2,6 +2,9 @@ package api
 
 import "net/http"
 
-func RegisterRoutes(mux *http.ServeMux) {
-	_ = mux
+func RegisterRoutes(mux *http.ServeMux, info appInfo) {
+	mux.HandleFunc("GET /info", func(w http.ResponseWriter, r *http.Request) {
+		_ = r
+		writeInfo(w, info)
+	})
 }
