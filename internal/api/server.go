@@ -7,7 +7,13 @@ import (
 	"saiao/internal/models"
 )
 
-func NewServer(listenAddress string, info appInfo) *http.Server {
+type BuildInfo struct {
+	Service string
+	Version string
+	Commit  string
+}
+
+func NewServer(listenAddress string, info BuildInfo) *http.Server {
 	mux := http.NewServeMux()
 	RegisterRoutes(mux, info)
 
@@ -17,10 +23,11 @@ func NewServer(listenAddress string, info appInfo) *http.Server {
 	}
 }
 
-type appInfo struct {
-	Service string
-	Version string
-	Commit  string
+func RegisterRoutes(mux *http.ServeMux, info BuildInfo) {
+	mux.HandleFunc("GET /info", func(w http.ResponseWriter, r *http.Request) {
+		_ = r
+		writeInfo(w, info)
+	})
 }
 
 func writeJSON(w http.ResponseWriter, statusCode int, v any) {
@@ -29,7 +36,7 @@ func writeJSON(w http.ResponseWriter, statusCode int, v any) {
 	_ = json.NewEncoder(w).Encode(v)
 }
 
-func writeInfo(w http.ResponseWriter, info appInfo) {
+func writeInfo(w http.ResponseWriter, info BuildInfo) {
 	writeJSON(w, http.StatusOK, models.InfoResponse{
 		Status:  "ok",
 		Service: info.Service,
