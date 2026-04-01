@@ -1,11 +1,11 @@
 package models
 
 type Config struct {
-	Server     ServerConfig
-	Logging    LoggingConfig
-	Identities []Identity
-	Actions    []Action
-	ToolGroups []ToolGroup
+	Server     ServerConfig   `yaml:"server"`
+	Logging    LoggingConfig  `yaml:"logging"`
+	Identities []Identity     `yaml:"identities"`
+	Actions    []Action       `yaml:"actions"`
+	ToolGroups []ToolGroup    `yaml:"tool_groups"`
 }
 
 type ServerConfig struct {
@@ -21,15 +21,15 @@ type LoggingConfig struct {
 }
 
 type Identity struct {
-	Name        string            `yaml:"name"`
-	Username    string            `yaml:"username"`
-	Email       string            `yaml:"email"`
-	DisplayName  string            `yaml:"display_name"`
-	Principal   string            `yaml:"principal"`
-	Domain      string            `yaml:"domain"`
-	Groups      []string          `yaml:"groups"`
-	Enabled     bool              `yaml:"enabled"`
-	Secrets     map[string]string `yaml:"secrets"`
+	Name       string            `yaml:"name"`
+	Username   string            `yaml:"username"`
+	Email      string            `yaml:"email"`
+	DisplayName string           `yaml:"display_name"`
+	Principal  string            `yaml:"principal"`
+	Domain     string            `yaml:"domain"`
+	Groups     []string          `yaml:"groups"`
+	Enabled    bool              `yaml:"enabled"`
+	Secrets    map[string]string  `yaml:"secrets"`
 }
 
 type Action struct {

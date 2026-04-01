@@ -1,36 +1,28 @@
 package config
 
 import (
+	"fmt"
 	"os"
+
+	"gopkg.in/yaml.v3"
 
 	"saiao/internal/models"
 )
 
 func Load(path string) (*models.Config, error) {
-	_, err := os.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	cfg := &models.Config{
-		Server: models.ServerConfig{
-			Listen:                 ":8080",
-			ShutdownTimeoutSeconds: 10,
-		},
-		Logging: models.LoggingConfig{
-			Format: "json",
-			Level:  "info",
-		},
-		Identities: []models.Identity{
-			{Name: "default_identity", Enabled: true},
-		},
-		Actions: []models.Action{
-			{Name: "default_action", Type: "shell", Identity: "default_identity", Enabled: true},
-		},
-		ToolGroups: []models.ToolGroup{
-			{Name: "default_group", AccessTokenEnv: "SAIAO_TOKEN_DEFAULT", Actions: []string{"default_action"}, Enabled: true},
-		},
+	var cfg models.Config
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return nil, fmt.Errorf("parse config: %w", err)
 	}
 
-	return cfg, nil
+	if err := ResolveSecrets(&cfg); err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
 }
