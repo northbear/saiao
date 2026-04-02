@@ -31,6 +31,43 @@ The file should usually be mounted into the container, for example under:
 
 The configuration file contains non-sensitive structure and metadata, while sensitive values should be supplied indirectly.
 
+### Minimal runnable example
+
+```yaml
+server:
+  listen: ":8080"
+
+logging:
+  format: json
+  level: info
+
+identities:
+  - name: local_shell
+    enabled: true
+
+actions:
+  - name: echo_message
+    type: shell
+    identity: local_shell
+    description: Echo a validated message
+    command_template: "printf '%s' '{{message}}'"
+    input_schema:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+
+tool_groups:
+  - name: default_group
+    access_token_env: SAIAO_TOKEN_DEFAULT
+    actions:
+      - echo_message
+```
+
+This example is also available as [`configs/example.yaml`](/home/space/devel/aikvn/saiao/configs/example.yaml).
+
 ## Top-Level Sections
 
 The configuration file may contain the following top-level sections:

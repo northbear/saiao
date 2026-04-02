@@ -37,7 +37,22 @@ type ToolManifest struct {
 
 type ManifestResponse struct {
 	RequestID string         `json:"request_id,omitempty"`
+	Format    string         `json:"format,omitempty"`
 	Tools     []ToolManifest `json:"tools"`
+}
+
+type OpenAITool struct {
+	Type        string         `json:"type"`
+	Name        string         `json:"name"`
+	Description string         `json:"description,omitempty"`
+	Parameters  map[string]any `json:"parameters"`
+	Strict      bool           `json:"strict"`
+}
+
+type OpenAIManifestResponse struct {
+	RequestID string       `json:"request_id,omitempty"`
+	Format    string       `json:"format"`
+	Tools     []OpenAITool `json:"tools"`
 }
 
 func NewSuccessResponse(requestID, output string, exitCode int) SuccessResponse {

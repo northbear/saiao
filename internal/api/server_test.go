@@ -149,8 +149,74 @@ func TestManifestEndpointRequiresMatchingToken(t *testing.T) {
 	if response.RequestID != "req-manifest-1" {
 		t.Fatalf("expected request id req-manifest-1, got %q", response.RequestID)
 	}
+	if response.Format != "saiao" {
+		t.Fatalf("expected format saiao, got %q", response.Format)
+	}
 	if rr.Header().Get(requestIDHeader) != "req-manifest-1" {
 		t.Fatalf("expected response header request id req-manifest-1, got %q", rr.Header().Get(requestIDHeader))
+	}
+}
+
+func TestManifestEndpointSupportsOpenAIFormat(t *testing.T) {
+	store := auth.NewTokenStore()
+	store.Register("secret", "ops_group")
+
+	srv := NewServer(":0", BuildInfo{Service: "saiao"}, testConfig(), store, slog.Default())
+
+	req := httptest.NewRequest(http.MethodGet, "/tool-groups/ops_group/manifest?format=openai", nil)
+	req.Header.Set("Authorization", "Bearer secret")
+	req.Header.Set(requestIDHeader, "req-manifest-openai-1")
+	rr := httptest.NewRecorder()
+
+	srv.Handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+
+	var response models.OpenAIManifestResponse
+	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if response.RequestID != "req-manifest-openai-1" {
+		t.Fatalf("expected request id req-manifest-openai-1, got %q", response.RequestID)
+	}
+	if response.Format != "openai" {
+		t.Fatalf("expected format openai, got %q", response.Format)
+	}
+	if len(response.Tools) != 1 {
+		t.Fatalf("expected 1 tool, got %d", len(response.Tools))
+	}
+	if response.Tools[0].Type != "function" {
+		t.Fatalf("expected function tool type, got %q", response.Tools[0].Type)
+	}
+	if response.Tools[0].Parameters["type"] != "object" {
+		t.Fatalf("expected object parameters, got %#v", response.Tools[0].Parameters)
+	}
+}
+
+func TestManifestEndpointRejectsUnsupportedFormat(t *testing.T) {
+	store := auth.NewTokenStore()
+	store.Register("secret", "ops_group")
+
+	srv := NewServer(":0", BuildInfo{Service: "saiao"}, testConfig(), store, slog.Default())
+
+	req := httptest.NewRequest(http.MethodGet, "/tool-groups/ops_group/manifest?format=unknown", nil)
+	req.Header.Set("Authorization", "Bearer secret")
+	rr := httptest.NewRecorder()
+
+	srv.Handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", rr.Code)
+	}
+
+	var response models.ErrorResponse
+	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if response.Error.Code != "invalid_input" {
+		t.Fatalf("expected invalid_input, got %q", response.Error.Code)
 	}
 }
 

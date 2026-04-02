@@ -1,5 +1,7 @@
 server:
   listen: ":8080"
+  read_timeout_seconds: 10
+  write_timeout_seconds: 30
   shutdown_timeout_seconds: 10
 
 logging:
@@ -7,18 +9,28 @@ logging:
   level: info
 
 identities:
-  - name: default_identity
+  - name: local_shell
     enabled: true
 
 actions:
-  - name: default_action
+  - name: echo_message
     type: shell
-    identity: default_identity
+    identity: local_shell
+    description: Echo a validated message
     enabled: true
+    command_template: "printf '%s' '{{message}}'"
+    input_schema:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
 
 tool_groups:
   - name: default_group
+    description: Default tool group for local testing
     access_token_env: SAIAO_TOKEN_DEFAULT
     actions:
-      - default_action
+      - echo_message
     enabled: true

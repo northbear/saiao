@@ -20,6 +20,7 @@ func RegisterRoutes(mux *http.ServeMux, info BuildInfo, cfg *models.Config, stor
 	mux.HandleFunc("GET /tool-groups/{group_name}/manifest", func(w http.ResponseWriter, r *http.Request) {
 		requestID := requestIDFromRequest(r)
 		groupName := r.PathValue("group_name")
+		format := r.URL.Query().Get("format")
 		requestLogger := logger.With("request_id", requestID)
 		if err := authorizeRequest(r, store, groupName); err != nil {
 			requestLogger.Warn("manifest_request_denied",
@@ -35,11 +36,12 @@ func RegisterRoutes(mux *http.ServeMux, info BuildInfo, cfg *models.Config, stor
 
 		requestLogger.Info("manifest_request",
 			"tool_group", groupName,
+			"manifest_format", format,
 			"method", r.Method,
 			"path", r.URL.Path,
 			"remote_addr", r.RemoteAddr,
 		)
-		writeManifest(w, requestID, groupName, cfg)
+		writeManifest(w, requestID, groupName, cfg, format)
 	})
 
 	mux.HandleFunc("POST /tool-groups/{group_name}/actions/{action_name}/invoke", func(w http.ResponseWriter, r *http.Request) {

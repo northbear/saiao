@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -64,14 +65,28 @@ func writeInfo(w http.ResponseWriter, requestID string, info BuildInfo) {
 	})
 }
 
-func writeManifest(w http.ResponseWriter, requestID string, groupName string, cfg *models.Config) {
-	response, err := manifest.Build(groupName, cfg)
-	if err != nil {
-		writeMappedError(w, requestID, err)
+func writeManifest(w http.ResponseWriter, requestID string, groupName string, cfg *models.Config, format string) {
+	switch format {
+	case "", manifest.FormatSAIAO:
+		response, err := manifest.Build(groupName, cfg)
+		if err != nil {
+			writeMappedError(w, requestID, err)
+			return
+		}
+		response.RequestID = requestID
+		writeJSON(w, http.StatusOK, response)
+	case manifest.FormatOpenAI:
+		response, err := manifest.BuildOpenAI(groupName, cfg)
+		if err != nil {
+			writeMappedError(w, requestID, err)
+			return
+		}
+		response.RequestID = requestID
+		writeJSON(w, http.StatusOK, response)
+	default:
+		writeMappedError(w, requestID, fmt.Errorf("%w: unsupported manifest format %q", saiaoerrors.ErrInvalidInput, format))
 		return
 	}
-	response.RequestID = requestID
-	writeJSON(w, http.StatusOK, response)
 }
 
 func writeInvokeResult(w http.ResponseWriter, requestID string, groupName, actionName string, body []byte, cfg *models.Config, logger *slog.Logger) {
