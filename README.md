@@ -247,3 +247,7 @@ SAIAO is intentionally small. It focuses on:
 - minimal runtime surface
 
 It does not yet try to be a full workflow engine, policy engine, or secrets platform.
+
+## License
+
+This project is licensed under the MIT License. See [`LICENSE`](/home/space/devel/aikvn/saiao/LICENSE).
