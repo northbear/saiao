@@ -10,6 +10,7 @@ import (
 
 	"saiao/internal/api"
 	"saiao/internal/auth"
+	"saiao/internal/buildinfo"
 	"saiao/internal/config"
 	"saiao/internal/logging"
 	"saiao/internal/models"
@@ -49,13 +50,7 @@ func RunWithContext(ctx context.Context, opts Options) error {
 
 	logger := logging.New(cfg.Logging.Format, cfg.Logging.Level)
 
-	buildInfo := api.BuildInfo{
-		Service: "saiao",
-		Version: "0.1.0",
-		Commit:  "dev",
-	}
-
-	srv := api.NewServer(cfg.Server.Listen, buildInfo, cfg, buildTokenStore(cfg), logger)
+	srv := api.NewServer(cfg.Server.Listen, buildinfo.Current(), cfg, buildTokenStore(cfg), logger)
 
 	errCh := make(chan error, 1)
 	go func() {
