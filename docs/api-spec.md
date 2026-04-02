@@ -18,6 +18,7 @@ Returns service status and build/runtime metadata.
 
 ```json
 {
+  "request_id": "4d3f9d1f7e2a4f2e9f0f0ccf7f4f1c57",
   "status": "ok",
   "service": "saiao",
   "version": "0.1.0",
@@ -35,6 +36,7 @@ Returns tools available to the caller.
 
 ```json
 {
+  "request_id": "4d3f9d1f7e2a4f2e9f0f0ccf7f4f1c57",
   "tools": [
     {
       "name": "action_name",
@@ -61,6 +63,7 @@ A JSON object matching the action `input_schema`.
 
 ```json
 {
+  "request_id": "4d3f9d1f7e2a4f2e9f0f0ccf7f4f1c57",
   "status": "success",
   "result": {
     "output": "string",
@@ -78,12 +81,15 @@ A JSON object matching the action `input_schema`.
 
 ```json
 {
+  "request_id": "4d3f9d1f7e2a4f2e9f0f0ccf7f4f1c57",
   "error": {
     "code": "invalid_input",
     "message": "description"
   }
 }
 ```
+
+Responses also include the `X-Request-Id` header. If the caller sends `X-Request-Id`, SAIAO reuses it when valid; otherwise SAIAO generates one.
 
 ## Error codes
 

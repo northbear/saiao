@@ -11,12 +11,15 @@ import (
 	"saiao/internal/models"
 )
 
-func Execute(groupName string, actionName string, body []byte, cfg *models.Config, logger *slog.Logger) (models.SuccessResponse, error) {
+func Execute(requestID string, groupName string, actionName string, body []byte, cfg *models.Config, logger *slog.Logger) (models.SuccessResponse, error) {
 	if cfg == nil {
 		return models.SuccessResponse{}, fmt.Errorf("%w: config is nil", saiaoerrors.ErrInternal)
 	}
 	if logger == nil {
 		logger = slog.Default()
+	}
+	if requestID != "" {
+		logger = logger.With("request_id", requestID)
 	}
 
 	group, action, identity, err := resolve(groupName, actionName, cfg)
@@ -73,7 +76,7 @@ func Execute(groupName string, actionName string, body []byte, cfg *models.Confi
 		"duration_ms", time.Since(startedAt).Milliseconds(),
 		"exit_code", exitCode,
 	)
-	return models.NewSuccessResponse(output, exitCode), nil
+	return models.NewSuccessResponse(requestID, output, exitCode), nil
 }
 
 func resolve(groupName, actionName string, cfg *models.Config) (models.ToolGroup, models.Action, models.Identity, error) {

@@ -7,9 +7,11 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"saiao/internal/auth"
+	"saiao/internal/logging"
 	"saiao/internal/models"
 )
 
@@ -103,6 +105,12 @@ func TestInfoEndpointReturnsInfoJSON(t *testing.T) {
 	if got["status"] != "ok" {
 		t.Fatalf("expected status ok, got %v", got["status"])
 	}
+	if got["request_id"] == "" {
+		t.Fatalf("expected request_id, got %v", got["request_id"])
+	}
+	if rr.Header().Get(requestIDHeader) != got["request_id"] {
+		t.Fatalf("expected header request id %v, got %q", got["request_id"], rr.Header().Get(requestIDHeader))
+	}
 	if got["service"] != "saiao" {
 		t.Fatalf("expected service saiao, got %v", got["service"])
 	}
@@ -122,6 +130,7 @@ func TestManifestEndpointRequiresMatchingToken(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "/tool-groups/ops_group/manifest", nil)
 	req.Header.Set("Authorization", "Bearer secret")
+	req.Header.Set(requestIDHeader, "req-manifest-1")
 	rr := httptest.NewRecorder()
 
 	srv.Handler.ServeHTTP(rr, req)
@@ -136,6 +145,12 @@ func TestManifestEndpointRequiresMatchingToken(t *testing.T) {
 	}
 	if len(response.Tools) != 1 || response.Tools[0].Name != "echo" {
 		t.Fatalf("unexpected manifest: %#v", response.Tools)
+	}
+	if response.RequestID != "req-manifest-1" {
+		t.Fatalf("expected request id req-manifest-1, got %q", response.RequestID)
+	}
+	if rr.Header().Get(requestIDHeader) != "req-manifest-1" {
+		t.Fatalf("expected response header request id req-manifest-1, got %q", rr.Header().Get(requestIDHeader))
 	}
 }
 
@@ -154,6 +169,14 @@ func TestManifestEndpointRejectsWrongToolGroupToken(t *testing.T) {
 	if rr.Code != http.StatusUnauthorized {
 		t.Fatalf("expected 401, got %d", rr.Code)
 	}
+
+	var response models.ErrorResponse
+	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if response.RequestID == "" {
+		t.Fatal("expected request id on error response")
+	}
 }
 
 func TestInvokeEndpointExecutesAction(t *testing.T) {
@@ -165,6 +188,7 @@ func TestInvokeEndpointExecutesAction(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/tool-groups/ops_group/actions/echo/invoke", bytes.NewBufferString(`{"message":"world"}`))
 	req.Header.Set("Authorization", "Bearer secret")
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(requestIDHeader, "req-invoke-1")
 	rr := httptest.NewRecorder()
 
 	srv.Handler.ServeHTTP(rr, req)
@@ -179,6 +203,9 @@ func TestInvokeEndpointExecutesAction(t *testing.T) {
 	}
 	if response.Result.Output != "hello world" {
 		t.Fatalf("unexpected output %q", response.Result.Output)
+	}
+	if response.RequestID != "req-invoke-1" {
+		t.Fatalf("expected request id req-invoke-1, got %q", response.RequestID)
 	}
 }
 
@@ -204,5 +231,42 @@ func TestInvokeEndpointReturnsInvalidInput(t *testing.T) {
 	}
 	if response.Error.Code != "invalid_input" {
 		t.Fatalf("expected invalid_input, got %q", response.Error.Code)
+	}
+	if response.RequestID == "" {
+		t.Fatal("expected request id on error response")
+	}
+}
+
+func TestInvokeLogsShareRequestIDAcrossAPIAndLifecycle(t *testing.T) {
+	store := auth.NewTokenStore()
+	store.Register("secret", "ops_group")
+
+	var buf bytes.Buffer
+	logger := logging.NewWithWriter(&buf, "json", "info")
+	srv := NewServer(":0", BuildInfo{Service: "saiao"}, testConfig(), store, logger)
+
+	req := httptest.NewRequest(http.MethodPost, "/tool-groups/ops_group/actions/echo/invoke", bytes.NewBufferString(`{"message":"world"}`))
+	req.Header.Set("Authorization", "Bearer secret")
+	req.Header.Set(requestIDHeader, "req-log-1")
+	rr := httptest.NewRecorder()
+
+	srv.Handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+
+	logOutput := buf.String()
+	if !strings.Contains(logOutput, `"msg":"invoke_request"`) {
+		t.Fatalf("expected invoke_request log, got %s", logOutput)
+	}
+	if !strings.Contains(logOutput, `"msg":"invoke_started"`) {
+		t.Fatalf("expected invoke_started log, got %s", logOutput)
+	}
+	if !strings.Contains(logOutput, `"msg":"invoke_finished"`) {
+		t.Fatalf("expected invoke_finished log, got %s", logOutput)
+	}
+	if count := strings.Count(logOutput, `"request_id":"req-log-1"`); count < 3 {
+		t.Fatalf("expected request_id to appear in correlated logs, got %d entries in %s", count, logOutput)
 	}
 }

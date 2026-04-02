@@ -1,14 +1,16 @@
 package models
 
 type InfoResponse struct {
-	Status  string `json:"status"`
-	Service string `json:"service"`
-	Version string `json:"version"`
-	Commit  string `json:"commit"`
+	RequestID string `json:"request_id,omitempty"`
+	Status    string `json:"status"`
+	Service   string `json:"service"`
+	Version   string `json:"version"`
+	Commit    string `json:"commit"`
 }
 
 type ErrorResponse struct {
-	Error APIError `json:"error"`
+	RequestID string   `json:"request_id,omitempty"`
+	Error     APIError `json:"error"`
 }
 
 type APIError struct {
@@ -17,8 +19,9 @@ type APIError struct {
 }
 
 type SuccessResponse struct {
-	Status string `json:"status"`
-	Result Result `json:"result"`
+	RequestID string `json:"request_id,omitempty"`
+	Status    string `json:"status"`
+	Result    Result `json:"result"`
 }
 
 type Result struct {
@@ -33,12 +36,14 @@ type ToolManifest struct {
 }
 
 type ManifestResponse struct {
-	Tools []ToolManifest `json:"tools"`
+	RequestID string         `json:"request_id,omitempty"`
+	Tools     []ToolManifest `json:"tools"`
 }
 
-func NewSuccessResponse(output string, exitCode int) SuccessResponse {
+func NewSuccessResponse(requestID, output string, exitCode int) SuccessResponse {
 	return SuccessResponse{
-		Status: "success",
+		RequestID: requestID,
+		Status:    "success",
 		Result: Result{
 			Output:   output,
 			ExitCode: exitCode,
@@ -46,8 +51,9 @@ func NewSuccessResponse(output string, exitCode int) SuccessResponse {
 	}
 }
 
-func NewErrorResponse(code, message string) ErrorResponse {
+func NewErrorResponse(requestID, code, message string) ErrorResponse {
 	return ErrorResponse{
+		RequestID: requestID,
 		Error: APIError{
 			Code:    code,
 			Message: message,

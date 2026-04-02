@@ -36,7 +36,7 @@ func TestExecuteRunsShellAction(t *testing.T) {
 		},
 	}
 
-	got, err := Execute("ops_group", "echo", []byte(`{"message":"world"}`), cfg, logging.Discard())
+	got, err := Execute("req-123", "ops_group", "echo", []byte(`{"message":"world"}`), cfg, logging.Discard())
 	if err != nil {
 		t.Fatalf("execute: %v", err)
 	}
@@ -46,6 +46,9 @@ func TestExecuteRunsShellAction(t *testing.T) {
 	}
 	if got.Result.ExitCode != 0 {
 		t.Fatalf("expected exit code 0, got %d", got.Result.ExitCode)
+	}
+	if got.RequestID != "req-123" {
+		t.Fatalf("expected request id req-123, got %q", got.RequestID)
 	}
 }
 
@@ -68,7 +71,7 @@ func TestExecuteReturnsTimeoutWhenActionExceedsDeadline(t *testing.T) {
 		},
 	}
 
-	_, err := Execute("ops_group", "slow", nil, cfg, logging.Discard())
+	_, err := Execute("req-123", "ops_group", "slow", nil, cfg, logging.Discard())
 	if err == nil {
 		t.Fatal("expected timeout error")
 	}
@@ -98,7 +101,7 @@ func TestExecuteLogsLifecycle(t *testing.T) {
 	var buf bytes.Buffer
 	logger := logging.NewWithWriter(&buf, "json", "info")
 
-	_, err := Execute("ops_group", "echo", nil, cfg, logger)
+	_, err := Execute("req-123", "ops_group", "echo", nil, cfg, logger)
 	if err != nil {
 		t.Fatalf("execute: %v", err)
 	}
@@ -115,5 +118,8 @@ func TestExecuteLogsLifecycle(t *testing.T) {
 	}
 	if !strings.Contains(logOutput, `"action":"echo"`) {
 		t.Fatalf("expected action field log, got %s", logOutput)
+	}
+	if !strings.Contains(logOutput, `"request_id":"req-123"`) {
+		t.Fatalf("expected request_id field log, got %s", logOutput)
 	}
 }
