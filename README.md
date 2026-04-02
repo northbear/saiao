@@ -250,4 +250,4 @@ It does not yet try to be a full workflow engine, policy engine, or secrets plat
 
 ## License
 
-This project is licensed under the MIT License. See [`LICENSE`](/home/space/devel/aikvn/saiao/LICENSE).
+This project is licensed under the MIT License. See [`LICENSE`](LICENSE).
