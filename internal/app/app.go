@@ -64,7 +64,10 @@ func RunWithContext(ctx context.Context, opts Options) error {
 
 	select {
 	case <-ctx.Done():
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.Server.ShutdownTimeoutSeconds)*time.Second)
+		shutdownCtx, cancel := context.WithTimeout(
+			context.Background(),
+			time.Duration(cfg.Server.ShutdownTimeoutSeconds)*time.Second,
+		)
 		defer cancel()
 
 		if err := srv.Shutdown(shutdownCtx); err != nil {
