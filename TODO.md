@@ -1,72 +1,45 @@
-# SAIAO TODO
+# SAIAO Roadmap
 
-## Milestone 1: Minimal runnable binary
+## Current Baseline
 
-- [x] Initialize Go module
-- [x] Create application entrypoint
-- [x] Add internal app wiring
-- [x] Add config models
-- [x] Add config loader stub
-- [x] Add config validation stub
-- [x] Add secret resolution stub
-- [x] Add auth package stub
-- [x] Add API server stub
-- [x] Add manifest package stub
-- [x] Add invoke package stub
-- [x] Add executor interface and stubs
-- [x] Add logging package stub
-- [x] Add error mapping stub
-- [x] Add basic tests
-- [x] Verify project builds with `go test ./...`
-- [x] Add Dockerfile
-- [x] Add example config
-- [x] Add Makefile for tests/build/docker-build/clean
+- MVP runtime is implemented end to end
+- manifest and invoke APIs are working
+- config loading, validation, secret resolution, and auth helpers are in place
+- HTTP, SSH, shell, and email executors are implemented
+- binary startup and Docker / Docker Buildx verification are covered
+- `go test ./...` is green with direct coverage for runtime-critical internal packages
 
-## Milestone 2: Core MVP runtime behavior
+## Next Priorities
 
-- [x] Implement YAML config parsing
-- [x] Implement startup config validation
-- [x] Implement secret resolution from env vars
-- [x] Implement secret resolution from mounted files
-- [x] Implement bearer token parsing
-- [x] Implement token-to-group mapping
-- [x] Implement `/info` response wiring with build info source
-- [x] Implement tool manifest generation
-- [x] Implement invoke request flow
-- [x] Implement input schema validation subset
-- [x] Implement normalized error mapping
-- [x] Implement HTTP executor
-- [x] Implement SSH executor
-- [x] Implement Shell executor
-- [x] Implement Email executor
+- add request correlation IDs so API and invocation lifecycle logs can be tied together
+- improve structured audit logging while keeping request payloads and rendered content out by default
+- harden shell and SSH execution policy boundaries beyond the current template validation rules
+- add CI automation for `go test ./...`, `docker build`, and `docker buildx build`
+- improve README and operator-facing documentation for configuration, runtime model, and deployment
 
-## Milestone 3: MVP hardening
+## Runtime Safety
 
-- [x] Add tests for config validation failures
-- [x] Add tests for secret resolution failures
-- [x] Add tests for unauthorized access
-- [x] Add tests for manifest filtering by tool group
-- [x] Add tests for invoke success and failure
-- [x] Add timeout handling tests
-- [x] Add integration test for binary startup
-- [x] Add container build verification
-- [x] Add README usage documentation
+- add explicit redaction helpers for future detailed logging modes
+- tighten validation around secret-like fields and executor-specific sensitive settings
+- decide whether executor outputs should be truncated or normalized before logging
+- define a clearer policy for allowed shell and SSH command patterns in production deployments
 
-## Notes
+## API Evolution
 
-Completed today:
-- go module initialized
-- CLI entrypoint added
-- app startup path wired
-- config-backed runnable binary created
-- /info endpoint added
-- Dockerfile created
-- Makefile created
-- example config added
-- unit tests passing
+- add request IDs to API responses and logs where useful
+- inject build metadata into `/info` from build-time variables instead of fixed defaults
+- review manifest compatibility with common LLM tool-calling formats
+- decide whether API error responses should carry stable request identifiers for support/debugging
 
-Current state:
-- the binary is runnable
-- Milestone 2 runtime behavior is implemented end-to-end for manifest retrieval and action invocation
-- Milestone 3 verification coverage now includes binary startup and Docker build validation
-- the next meaningful gaps are broader executor-specific integration coverage and runtime polish
+## Delivery
+
+- add CI workflows for tests and image builds
+- document release/build steps and reproducible container build expectations
+- decide whether `Makefile` targets should default to Buildx-based image builds
+
+## Future
+
+- optional detailed invocation logging with safe redaction controls
+- richer audit/event model
+- additional executor hardening and integration test depth
+- more complete operator documentation and example deployment layouts
